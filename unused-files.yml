@@ -1,0 +1,52 @@
+
+ame: Reusable - Detect Unused Files
+
+on:
+  workflow_call:
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Scan for unused files
+        run: |
+          echo "### 🗂 Old / Unused Files (Auto Detected)" > UNUSED.md
+          echo "" >> UNUSED.md
+          echo "| File | Last Updated | Age | Delete |" >> UNUSED.md
+          echo "|------|--------------|------|--------|" >> UNUSED.md
+
+          current_ts=$(date +%s)
+
+          while IFS= read -r file; do
+            last_date=$(git log -1 --format="%ad" --date=short -- "$file")
+            last_ts=$(git log -1 --format="%ct" -- "$file")
+            ten_years_ago=$(date -d "10 years ago" +%s)
+
+            if [ "$last_ts" -lt "$ten_years_ago" ]; then
+              age_years=$(( (current_ts - last_ts) / 31536000 ))
+              echo "| $file | $last_date | ${age_years} years old | https://github.com/${{ github.repository }}/delete/$file |" >> UNUSED.md
+            fi
+          done < <(git ls-files)
+
+      - name: Update README
+        run: |
+          if ! grep -q "<!-- UNUSED-FILES-START -->" README.md; then
+            printf "\n<!-- UNUSED-FILES-START -->\n<!-- UNUSED-FILES-END -->\n" >> README.md
+          fi
+
+          sed -i '/<!-- UNUSED-FILES-START -->/,/<!-- UNUSED-FILES-END -->/c\
+<!-- UNUSED-FILES-START -->\n'"$(cat UNUSED.md)"'\n<!-- UNUSED-FILES-END -->' README.md
+
+      - name: Commit updates
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add README.md UNUSED.md
+          git commit -m "Updated unused files list" || echo "No changes"
+          git push
