@@ -40,10 +40,10 @@ jobs:
 <!-- UNUSED-FILES-START -->\n'"$(cat UNUSED.md)"'\n<!-- UNUSED-FILES-END -->' README.md || \
           printf "\n\n<!-- UNUSED-FILES-START -->\n%s\n<!-- UNUSED-FILES-END -->\n" "$(cat UNUSED.md)" >> README.md
 
-      - name: Commit changes
+      - name: Commit updates
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
           git add README.md UNUSED.md
-          git commit -m "Update unused files list" || echo "No changes"
+          git commit -m "Updated unused files list" || echo "No changes"
           git push
