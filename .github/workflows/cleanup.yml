@@ -5,20 +5,26 @@ on:
   schedule:
     - cron: "0 0 * * 0"
 
+permissions:
+  contents: write
+
 jobs:
   check:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Run checker
+      - name: Run scanner
         run: node scripts/cleanup-check.js
 
-      - name: Save report
+      - name: Update README
+        run: node scripts/update-readme.js
+
+      - name: Commit changes
         run: |
-          git config user.name "bot"
-          git config user.email "bot@example.com"
-          git add unused-files.json
-          git commit -m "cleanup report" || echo "no changes"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git commit -m "auto cleanup update" || echo "No changes"
           git push
